@@ -13,19 +13,52 @@
                     <label style="font-size: 12px">Enter contract address</label>
                     <md-input v-model="address"></md-input>
                 </md-field>
-                <md-button id="orders" class="md-primary" @click="check_orders">Check new orders</md-button>
-                <md-button id="rating" class="md-primary" @click="rating">Rating</md-button>
-                <md-button id="rating" class="md-primary" @click="feedbeck">Test</md-button>
-            </md-tab>
+                <md-field style="width: 50%">
+                    <label style="font-size: 12px">Id</label>
+                    <md-input v-model="idOrder"></md-input>
+                </md-field>
+                <md-field style="width: 50%">
+                    <label style="font-size: 12px">Price</label>
+                    <md-input v-model="price"></md-input>
+                </md-field>
+                <md-button id="orders" class="md-primary" @click="add_orders">Add new goods</md-button>
+                <hr>
+                <md-field style="width: 50%; margin-top: 10%">
+                    <label style="font-size: 12px">Enter contract address</label>
+                    <md-input v-model="checkOrders"></md-input>
+                </md-field>
+                <md-button id="checkOrders" class="md-primary" @click="check_orders">Check orders</md-button>
 
+                <md-field v-if="haveItems_1" style="width: 50%; margin-top: 10%">
+                    <label style="font-size: 12px">Enter data</label>
+                    <md-input v-model="haveItems"></md-input>
+                </md-field>
+                <md-button id="haveItems" v-if="haveItems_1" class="md-primary" @click="encr">Encrypt data</md-button>
+            </md-tab>
 
 
             <md-tab id="tab-buyer" md-label="Buyer" to="/components/tabs/buyer">
-                <p>2Unde provident nemo reiciendis officia, possimus repellendus. Facere dignissimos dicta quis rem.
-                    Aliquam aspernatur dolor atque nisi id deserunt laudantium quam repellat.</p>
+                <md-field v-if="privateKey" style="width: 50%">
+                    <label style="font-size: 12px">Private key</label>
+                    <md-input v-model="privateKey" disabled></md-input>
+                    <span class="md-helper-text">Save this key for next steps!</span>
+                </md-field>
+                <md-button id="keyPair" class="md-primary" @click="create_keys">Create keys</md-button>
+                <hr>
+                <md-field style="width: 50%">
+                    <label style="font-size: 12px">Enter seller`s address</label>
+                    <md-input v-model="sellerAddress"></md-input>
+                </md-field>
+                <md-field style="width: 50%">
+                    <label style="font-size: 12px">Order ID</label>
+                    <md-input v-model="sellerId"></md-input>
+                </md-field>
+                <md-field style="width: 50%">
+                    <label style="font-size: 12px">Amount</label>
+                    <md-input v-model="amount"></md-input>
+                </md-field>
+                <md-button id="buy" class="md-primary" @click="buy">Buy</md-button>
             </md-tab>
-
-
 
 
             <md-tab id="tab-ratings" md-label="Ratings" to="/components/tabs/ratings">
@@ -39,7 +72,9 @@
 <script>
     import Eth from 'ethjs-query'
     import EthContract from 'ethjs-contract'
+    import ipfsAPI from 'ipfs-api'
     import Rating from './Ratings'
+    import NodeRSA from 'node-rsa'
 
     window.addEventListener('load', function () {
 
@@ -127,349 +162,307 @@
         name: 'Home',
         data: function () {
             return {
+                currentContractAddress: '',
+                encrResult: '',
+                haveItems: '',
+                haveItems_1: false,
+                checkOrders: '',
+                amount: 0,
+                sellerId: '',
+                sellerAddress: '',
+                publicKey: '',
+                privateKey: false,
                 show_input: false,
                 new_contract: '',
                 address: '',
                 contract: '',
-                storeABI: [
-                    {
-                        "constant": false,
-                        "inputs": [
-                            {
-                                "name": "owner",
-                                "type": "address"
-                            }
-                        ],
-                        "name": "reg_New_store",
-                        "outputs": [
-                            {
-                                "name": "",
-                                "type": "address"
-                            }
-                        ],
-                        "payable": false,
-                        "stateMutability": "nonpayable",
-                        "type": "function"
-                    },
-            {
-                "constant": true,
-                "inputs": [
-                {
-                    "name": "",
-                    "type": "uint256"
-                }
-            ],
-                "name": "store_addresses",
-                "outputs": [
-                {
-                    "name": "",
-                    "type": "address"
-                }
-            ],
-                "payable": false,
-                "stateMutability": "view",
-                "type": "function"
-            },
-            {
-                "constant": true,
-                "inputs": [],
-                "name": "getter_addresses",
-                "outputs": [
-                {
-                    "name": "",
-                    "type": "address[]"
-                }
-            ],
-                "payable": false,
-                "stateMutability": "view",
-                "type": "function"
-            },
-            {
-                "anonymous": false,
-                "inputs": [
-                {
-                    "indexed": false,
-                    "name": "store_address",
-                    "type": "address"
-                }
-            ],
-                "name": "NewStore",
-                "type": "event"
-            }
-        ]
-
-
-
-            [
-                {
-                    "constant": true,
-                    "inputs": [
+                idOrder: '',
+                price: '',
+                storeABI:
+                    [
                         {
-                            "name": "id",
-                            "type": "uint64"
-                        }
-                    ],
-                    "name": "getter_public_keys",
-                    "outputs": [
-                        {
-                            "name": "",
-                            "type": "bytes"
-                        }
-                    ],
-                    "payable": false,
-                    "stateMutability": "view",
-                    "type": "function"
-                },
-                {
-                    "constant": true,
-                    "inputs": [
-                        {
-                            "name": "",
-                            "type": "uint64"
-                        }
-                    ],
-                    "name": "data",
-                    "outputs": [
-                        {
-                            "name": "",
-                            "type": "bytes"
-                        }
-                    ],
-                    "payable": false,
-                    "stateMutability": "view",
-                    "type": "function"
-                },
-                {
-                    "constant": true,
-                    "inputs": [],
-                    "name": "positive_karma",
-                    "outputs": [
-                        {
-                            "name": "",
-                            "type": "uint64"
-                        }
-                    ],
-                    "payable": false,
-                    "stateMutability": "view",
-                    "type": "function"
-                },
-                {
-                    "constant": true,
-                    "inputs": [
-                        {
-                            "name": "",
-                            "type": "uint64"
-                        }
-                    ],
-                    "name": "offers",
-                    "outputs": [
-                        {
-                            "name": "",
-                            "type": "address"
-                        }
-                    ],
-                    "payable": false,
-                    "stateMutability": "view",
-                    "type": "function"
-                },
-                {
-                    "constant": false,
-                    "inputs": [
-                        {
-                            "name": "order_id",
-                            "type": "uint64"
+                            "constant": false,
+                            "inputs": [
+                                {
+                                    "name": "recipient",
+                                    "type": "address"
+                                },
+                                {
+                                    "name": "value",
+                                    "type": "uint256"
+                                }
+                            ],
+                            "name": "charge_out",
+                            "outputs": [],
+                            "payable": false,
+                            "stateMutability": "nonpayable",
+                            "type": "function"
                         },
                         {
-                            "name": "new_data",
-                            "type": "bytes"
-                        }
-                    ],
-                    "name": "send_id_data",
-                    "outputs": [],
-                    "payable": false,
-                    "stateMutability": "nonpayable",
-                    "type": "function"
-                },
-                {
-                    "constant": false,
-                    "inputs": [
-                        {
-                            "name": "value",
-                            "type": "bool"
-                        }
-                    ],
-                    "name": "vote",
-                    "outputs": [],
-                    "payable": false,
-                    "stateMutability": "nonpayable",
-                    "type": "function"
-                },
-                {
-                    "constant": true,
-                    "inputs": [],
-                    "name": "negative_karma",
-                    "outputs": [
-                        {
-                            "name": "",
-                            "type": "uint64"
-                        }
-                    ],
-                    "payable": false,
-                    "stateMutability": "view",
-                    "type": "function"
-                },
-                {
-                    "constant": true,
-                    "inputs": [
-                        {
-                            "name": "",
-                            "type": "address"
-                        }
-                    ],
-                    "name": "opened_transactions",
-                    "outputs": [
-                        {
-                            "name": "",
-                            "type": "uint64"
-                        }
-                    ],
-                    "payable": false,
-                    "stateMutability": "view",
-                    "type": "function"
-                },
-                {
-                    "constant": false,
-                    "inputs": [
-                        {
-                            "name": "recipient",
-                            "type": "address"
+                            "constant": false,
+                            "inputs": [
+                                {
+                                    "name": "id",
+                                    "type": "uint64"
+                                },
+                                {
+                                    "name": "set_price",
+                                    "type": "uint256"
+                                }
+                            ],
+                            "name": "create_id",
+                            "outputs": [],
+                            "payable": false,
+                            "stateMutability": "nonpayable",
+                            "type": "function"
                         },
                         {
-                            "name": "value",
-                            "type": "uint256"
-                        }
-                    ],
-                    "name": "charge_out",
-                    "outputs": [],
-                    "payable": false,
-                    "stateMutability": "nonpayable",
-                    "type": "function"
-                },
-                {
-                    "constant": true,
-                    "inputs": [
-                        {
-                            "name": "",
-                            "type": "uint64"
-                        }
-                    ],
-                    "name": "price",
-                    "outputs": [
-                        {
-                            "name": "",
-                            "type": "uint256"
-                        }
-                    ],
-                    "payable": false,
-                    "stateMutability": "view",
-                    "type": "function"
-                },
-                {
-                    "constant": false,
-                    "inputs": [
-                        {
-                            "name": "id",
-                            "type": "uint64"
+                            "constant": false,
+                            "inputs": [
+                                {
+                                    "name": "order_id",
+                                    "type": "uint64"
+                                },
+                                {
+                                    "name": "pub_key",
+                                    "type": "bytes"
+                                }
+                            ],
+                            "name": "pay_order",
+                            "outputs": [],
+                            "payable": true,
+                            "stateMutability": "payable",
+                            "type": "function"
                         },
                         {
-                            "name": "set_price",
-                            "type": "uint256"
-                        }
-                    ],
-                    "name": "create_id",
-                    "outputs": [],
-                    "payable": false,
-                    "stateMutability": "nonpayable",
-                    "type": "function"
-                },
-                {
-                    "constant": false,
-                    "inputs": [
-                        {
-                            "name": "order_id",
-                            "type": "uint64"
+                            "constant": false,
+                            "inputs": [
+                                {
+                                    "name": "order_id",
+                                    "type": "uint64"
+                                },
+                                {
+                                    "name": "new_data",
+                                    "type": "bytes"
+                                }
+                            ],
+                            "name": "send_id_data",
+                            "outputs": [],
+                            "payable": false,
+                            "stateMutability": "nonpayable",
+                            "type": "function"
                         },
                         {
-                            "name": "pub_key",
-                            "type": "bytes"
-                        }
-                    ],
-                    "name": "pay_order",
-                    "outputs": [],
-                    "payable": true,
-                    "stateMutability": "payable",
-                    "type": "function"
-                },
-                {
-                    "constant": true,
-                    "inputs": [],
-                    "name": "total_orders",
-                    "outputs": [
-                        {
-                            "name": "",
-                            "type": "uint64"
-                        }
-                    ],
-                    "payable": false,
-                    "stateMutability": "view",
-                    "type": "function"
-                },
-                {
-                    "inputs": [
-                        {
-                            "name": "new_owner",
-                            "type": "address"
-                        }
-                    ],
-                    "payable": false,
-                    "stateMutability": "nonpayable",
-                    "type": "constructor"
-                },
-                {
-                    "anonymous": false,
-                    "inputs": [
-                        {
-                            "indexed": false,
-                            "name": "id",
-                            "type": "uint64"
+                            "constant": false,
+                            "inputs": [
+                                {
+                                    "name": "value",
+                                    "type": "bool"
+                                }
+                            ],
+                            "name": "vote",
+                            "outputs": [],
+                            "payable": false,
+                            "stateMutability": "nonpayable",
+                            "type": "function"
                         },
                         {
-                            "indexed": false,
-                            "name": "sender",
-                            "type": "address"
+                            "inputs": [
+                                {
+                                    "name": "new_owner",
+                                    "type": "address"
+                                }
+                            ],
+                            "payable": false,
+                            "stateMutability": "nonpayable",
+                            "type": "constructor"
                         },
                         {
-                            "indexed": false,
-                            "name": "public_key",
-                            "type": "bytes"
-                        }
-                    ],
-                    "name": "Payed_order",
-                    "type": "event"
-                },
-                {
-                    "anonymous": false,
-                    "inputs": [
+                            "anonymous": false,
+                            "inputs": [
+                                {
+                                    "indexed": false,
+                                    "name": "id",
+                                    "type": "uint64"
+                                },
+                                {
+                                    "indexed": false,
+                                    "name": "sender",
+                                    "type": "address"
+                                },
+                                {
+                                    "indexed": false,
+                                    "name": "public_key",
+                                    "type": "bytes"
+                                }
+                            ],
+                            "name": "Payed_order",
+                            "type": "event"
+                        },
                         {
-                            "indexed": false,
+                            "anonymous": false,
+                            "inputs": [
+                                {
+                                    "indexed": false,
+                                    "name": "data",
+                                    "type": "bytes"
+                                }
+                            ],
+                            "name": "New_data",
+                            "type": "event"
+                        },
+                        {
+                            "constant": true,
+                            "inputs": [
+                                {
+                                    "name": "",
+                                    "type": "uint64"
+                                }
+                            ],
                             "name": "data",
-                            "type": "bytes"
+                            "outputs": [
+                                {
+                                    "name": "",
+                                    "type": "bytes"
+                                }
+                            ],
+                            "payable": false,
+                            "stateMutability": "view",
+                            "type": "function"
+                        },
+                        {
+                            "constant": true,
+                            "inputs": [],
+                            "name": "getter_offers",
+                            "outputs": [
+                                {
+                                    "name": "",
+                                    "type": "uint64[]"
+                                }
+                            ],
+                            "payable": false,
+                            "stateMutability": "view",
+                            "type": "function"
+                        },
+                        {
+                            "constant": true,
+                            "inputs": [
+                                {
+                                    "name": "id",
+                                    "type": "uint64"
+                                }
+                            ],
+                            "name": "getter_public_keys",
+                            "outputs": [
+                                {
+                                    "name": "",
+                                    "type": "bytes"
+                                }
+                            ],
+                            "payable": false,
+                            "stateMutability": "view",
+                            "type": "function"
+                        },
+                        {
+                            "constant": true,
+                            "inputs": [],
+                            "name": "negative_karma",
+                            "outputs": [
+                                {
+                                    "name": "",
+                                    "type": "uint64"
+                                }
+                            ],
+                            "payable": false,
+                            "stateMutability": "view",
+                            "type": "function"
+                        },
+                        {
+                            "constant": true,
+                            "inputs": [
+                                {
+                                    "name": "",
+                                    "type": "uint64"
+                                }
+                            ],
+                            "name": "offers",
+                            "outputs": [
+                                {
+                                    "name": "",
+                                    "type": "address"
+                                }
+                            ],
+                            "payable": false,
+                            "stateMutability": "view",
+                            "type": "function"
+                        },
+                        {
+                            "constant": true,
+                            "inputs": [
+                                {
+                                    "name": "",
+                                    "type": "address"
+                                }
+                            ],
+                            "name": "opened_transactions",
+                            "outputs": [
+                                {
+                                    "name": "",
+                                    "type": "uint64"
+                                }
+                            ],
+                            "payable": false,
+                            "stateMutability": "view",
+                            "type": "function"
+                        },
+                        {
+                            "constant": true,
+                            "inputs": [],
+                            "name": "positive_karma",
+                            "outputs": [
+                                {
+                                    "name": "",
+                                    "type": "uint64"
+                                }
+                            ],
+                            "payable": false,
+                            "stateMutability": "view",
+                            "type": "function"
+                        },
+                        {
+                            "constant": true,
+                            "inputs": [
+                                {
+                                    "name": "",
+                                    "type": "uint64"
+                                }
+                            ],
+                            "name": "price",
+                            "outputs": [
+                                {
+                                    "name": "",
+                                    "type": "uint256"
+                                }
+                            ],
+                            "payable": false,
+                            "stateMutability": "view",
+                            "type": "function"
+                        },
+                        {
+                            "constant": true,
+                            "inputs": [],
+                            "name": "total_orders",
+                            "outputs": [
+                                {
+                                    "name": "",
+                                    "type": "uint64"
+                                }
+                            ],
+                            "payable": false,
+                            "stateMutability": "view",
+                            "type": "function"
                         }
                     ],
-                    "name": "New_data",
-                    "type": "event"
-                }
-            ],
                 abi: [
                     {
                         "constant": false,
@@ -538,18 +531,52 @@
                 ],
             }
         },
-        // 0xdf932f86fad0451ec89b2dca0336a1b46a64a72f
+        //0xb156e7584116e2bb5bc52e31eb650a0dee563023, 0, 123
+
         computed: {
             store_address() {
                 return this.new_contract;
             }
         },
         components: {
-          Rating
+            Rating
         },
         methods: {
+            async check_orders () {
+                this.contract = await web3js.eth.contract(this.storeABI).at(this.checkOrders);
+                let account;
+                web3js.eth.getAccounts((err, res) => {
+                    account = res[0];
+                    this.contract.getter_offers((error, result) => {
+                        Object.keys(result).map((item) => {
+                            this.contract.offers(result[item].toNumber(), (error, res) => {
+                                if (Number(res) > Number(0x0000000000000000000000000000000000000001)) {
+                                    this.encrResult = result[item].toNumber();
+                                    this.currentContractAddress = this.checkOrders;
+                                    this.haveItems_1 = true;
+                                }
+
+                            })
+                        });
+                    });
+                })
+            },
+
+            async buy() {
+                let arr = [];
+                Object.keys(this.publicKey).map((item) => {
+                    arr.push('0x' + (this.publicKey[item]).toString(16))
+                });
+                this.contract = await web3js.eth.contract(this.storeABI).at(this.sellerAddress);
+                let account;
+                web3js.eth.getAccounts((err, res) => {
+                    account = res[0];
+                    this.contract.pay_order(this.sellerId, arr, {value: this.amount}, (err, res) => {console.log(res)})
+                })
+            },
+
             async createStore() {
-                let tokenContractAddress = "0x5db6c48179504076514902fd94b26b3b6767d482";
+                let tokenContractAddress = "0xbbd7818b85f2b436b63e229d642714b2619f83a5";
                 this.contract = await web3js.eth.contract(this.abi).at(tokenContractAddress);
                 let account;
                 let self = this;
@@ -568,47 +595,26 @@
                     })
                 })
             },
-            async parseRatings(address) {
-                let contract = await web3js.eth.contract(this.storeABI).at(address);
-                let self = this;
+
+            encr() {
+                // this.encrResult
+                console.log(this.encrResult)
+                this.contract = web3js.eth.contract(this.storeABI).at(this.currentContractAddress);
                 let account;
 
-
-                contract.positive_karma((error, result) => {
-                    console.log(result.toNumber())
-                });
-                contract.negative_karma((error, result) => {
-                    console.log(result.toNumber())
-                });
-                contract.total_orders((error, result) => {
-                    console.log(result.toNumber())
-                })
-            },
-
-            async rating() {
-                let tokenContractAddress = "0x5db6c48179504076514902fd94b26b3b6767d482";
-                this.contract = await web3js.eth.contract(this.abi).at(tokenContractAddress);
-                let account;
-                let self = this;
                 web3js.eth.getAccounts((err, res) => {
                     account = res[0];
-                    self.contract.getter_addresses((error, result) => {
-                        Object.keys(result).map(function (item) {
-                            self.parseRatings(result[item]);
-                        });
-                        console.log(`%c address = ${result}`, 'color: orange; font-weight: bold');
+                    this.contract.getter_public_keys(this.encrResult, (error, result) => {
+                        console.log("contract ",result);
+                        const publicKey = result; //Get from Contract
+                        const key = new NodeRSA();
+
+                        key.importKey(publicKey, 'pkcs8-public-der');
+                        const encrypted = key.encrypt(this.haveItems, 'base64'); // Send it to the store contract
+                        console.log("encrypt data ",encrypted);
                     });
-                })
-            },
+                });
 
-            async encr(data, contract_addr) {
-                const publicKey = 0; //Get from Contract
-                const NodeRSA = require('node-rsa');
-                const key = new NodeRSA();
-
-                key.importKey(publicKey, 'pkcs8-public-der');
-                const encrypted = key.encrypt(data, 'base64'); // Send it to the store contract
-                console.log(encrypted);
 
                 // this.contract = await web3js.eth.contract(this.storeABI).at(contract_addr);
                 // let accaunt;
@@ -639,20 +645,16 @@
             async get_data(validCID, ipfs) {
                 ipfs.files.get(validCID, function (err, files) {
                     files.forEach((file) => {
-                        console.log(file.path)
+                        console.log(file.path);
                         console.log(file.content.toString('utf8'))
                     })
                 })
             },
 
-            async feedbeck() {
-                const ipfsAPI = require('ipfs-api');
-                const fs = require('fs');
-
+            async feedback() {
                 const ipfs = ipfsAPI('ipfs.infura.io', '5001', {protocol: 'https'})
 
                 //Reading file from computer
-                let testFile = fs.readFileSync("/test.txt", "utf8");
                 //Creating buffer for ipfs function to add file to the system
                 let testBuffer = new Buffer(testFile);
 
@@ -660,7 +662,6 @@
             },
 
             async decr(privateKey) {
-                const NodeRSA = require('node-rsa');
                 const key = new NodeRSA();
                 const encrypted = 0; //Get from contract
 
@@ -669,25 +670,24 @@
                 console.log('decrypted: ', decrypted);
             },
 
-            async create_keys() {
-                const NodeRSA = require('node-rsa');
+            create_keys() {
                 const key = new NodeRSA({b: 512});
 
 
                 const publicKey = key.exportKey('pkcs8-public-der'); //Send it to the store function
 
                 console.log(publicKey);
+                this.publicKey = publicKey;
                 const privateKey = key.exportKey('pkcs1'); //Show it to the screen
                 console.log("Private Key", privateKey);
-
+                this.privateKey = privateKey;
             },
-
 
 
             //End users function
 
 
-            async check_orders() {
+            async add_orders() {
                 console.log(this.address);
                 if (this.address.length !== 42) {
                     this.$toast.error({
@@ -696,16 +696,20 @@
                     });
                 }
                 else {
-                    // let tokenContractAddress = "0x5db6c48179504076514902fd94b26b3b6767d482";
                     this.contract = await web3js.eth.contract(this.storeABI).at(this.address);
-                    // let account;
-                    // let self = this;
-                    // web3js.eth.getAccounts((err, res) => {
-                    //     account = res[0];
-                    //     self.contract.create_id(0, 1, (error, result) => {
-                    //         console.log(`%c Something happend = ${result}`, 'color: orange; font-weight: bold');
-                    //     });
-                    // })
+                    let account;
+                    web3js.eth.getAccounts((err, res) => {
+                        account = res[0];
+                        this.contract.create_id(this.idOrder, this.price, (error, result) => {
+                            if (error) {
+                                console.log(error);
+                                this.$toast.error({
+                                    title: 'Owner',
+                                    message: error
+                                });
+                            }
+                        });
+                    })
                 }
             }
         }
@@ -718,20 +722,21 @@
     }
 
     #create {
-     margin-top: 50px;
+        margin-top: 50px;
     }
 
-    #create, #orders {
+    #create, #orders, #keyPair, #buy, #checkOrders {
         background-color: #448aff;
         color: white;
     }
 
-    #tab-seller {
+    #tab-seller, #tab-buyer, #buy, #haveItems {
         display: flex !important;
         flex-direction: column;
         justify-content: center !important;
         align-items: center;
     }
+
     hr {
         width: 80%;
         margin-top: 50px;

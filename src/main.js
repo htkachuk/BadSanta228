@@ -15,6 +15,8 @@ Vue.use(VueMaterial);
 Vue.use(CxltToastr, toastrConfigs);
 Vue.config.productionTip = false;
 
-new Vue({
+let vm = new Vue({
   render: h => h(App),
 }).$mount('#app');
+
+global.vm = vm;

@@ -11,7 +11,6 @@
     "cxlt-vue2-toastr": "^1.1.0",
     "ethjs-contract": "^0.2.3",
     "ethjs-query": "^0.3.8",
-    "fs": "0.0.1-security",
     "generate-rsa-keypair": "^0.1.2",
     "ipfs-api": "^26.1.2",
     "node-rsa": "^1.0.5",
