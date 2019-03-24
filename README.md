@@ -1,6 +1,6 @@
 # BadSanta228
 
-##Blockchain hakathon project
+## Blockchain hakathon project
 
 ```sh
 git clone https://github.com/htkachuk/BadSanta228.git
